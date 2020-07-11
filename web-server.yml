@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  ports:
+    - nodePort: 31000
+      port: 80
+      targetPort: 80
+  selector:
+    app: web
+  type: NodePort
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: web-pv-claim
+  labels:
+    app: web
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  selector:
+    matchLabels:
+      app: web
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - image: abhishekkhandelwal/web:1
+          name: web
+          ports:
+          - containerPort: 80
+            name: web
+          volumeMounts:
+          - name: web-persistent-storage
+            mountPath: /usr/local/apache2/htdocs
+      volumes:
+      - name: web-persistent-storage
+        PersistentVolumeClaim:
+          claimName: web-pv-claim
